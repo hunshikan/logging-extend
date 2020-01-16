@@ -5,7 +5,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.turbo.TurboFilter;
 import ch.qos.logback.core.spi.FilterReply;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.slf4j.Marker;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -17,7 +16,7 @@ import javax.servlet.http.HttpSession;
 /**
  * DynamicLoggingFilter
  *
- * @author xuning
+ * @author jiyanwai
  * @date 2020-01-15 16:09:16
  */
 @Slf4j
@@ -38,6 +37,7 @@ public class DynamicLoggingFilter extends TurboFilter {
 	public FilterReply decide(Marker marker, Logger logger, Level level,
 	                          String format, Object[] params, Throwable t) {
 
+
 		// 这里可以过滤我们自己的logger
 		boolean isMyLogger = logger.getName().startsWith("com.jiyuanwai");
 		if (!isMyLogger) {
@@ -52,26 +52,29 @@ public class DynamicLoggingFilter extends TurboFilter {
 			return FilterReply.NEUTRAL;
 		}
 
-		// 先判断 RequestHeader，用于区分线程
-		ServletRequestAttributes servletRequestAttributes =
-				(ServletRequestAttributes) requestAttributes;
-		// 按照请求参数判断，实际生产环境可以开发功能给管理人员功能，将用户唯一标示放入缓存或者session
-		HttpServletRequest request = servletRequestAttributes.getRequest();
-		String debug = request.getHeader(DEBUG_HEADER_NAME);
-		boolean debugBoolean = Boolean.parseBoolean(debug);
-		if (debugBoolean) {
-			return FilterReply.ACCEPT;
-		}
+		try {
+			// 先判断 RequestHeader，用于区分线程
+			ServletRequestAttributes servletRequestAttributes =
+					(ServletRequestAttributes) requestAttributes;
+			// 按照请求参数判断，实际生产环境可以开发功能给管理人员功能，将用户唯一标示放入缓存或者session
+			HttpServletRequest request = servletRequestAttributes.getRequest();
+			String debug = request.getHeader(DEBUG_HEADER_NAME);
+			if (debug != null) {
+				return FilterReply.ACCEPT;
+			}
 
-		// 再判断 Session
-		HttpSession session = request.getSession(false);
-		if (session == null) {
-			return FilterReply.NEUTRAL;
-		}
-		Object attribute = session.getAttribute(DEBUG_SESSION_KEY);
-		debugBoolean = Boolean.parseBoolean((String) attribute);
-		if (debugBoolean) {
-			return FilterReply.ACCEPT;
+			// 再判断 Session
+			HttpSession session = request.getSession(false);
+			if (session == null) {
+				return FilterReply.NEUTRAL;
+			}
+			Object attribute = session.getAttribute(DEBUG_SESSION_KEY);
+			if (attribute != null) {
+				return FilterReply.ACCEPT;
+			}
+		} catch (Exception e) {
+			// 此处处理异常，不影响业务
+			log.error("Error handler dynamic log", e);
 		}
 
 		return FilterReply.NEUTRAL;

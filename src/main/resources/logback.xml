@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="false" debug="false">
-    <turboFilter class="com.jiyuanwai.logging.extend.dynamic.DynamicLoggingFilter" />
+    <turboFilter class="com.jiyuanwai.logging.extend.dynamic.DynamicLoggingFilter"/>
 
     <!-- 定义日志文件的存储地 -->
-    <property name="LOG_PATH" value="log-benchmark/target/log"/>
+    <property name="LOG_PATH" value="./target/log"/>
 
 
     <property name="CONSOLE_LOG_PATTERN"
@@ -16,9 +16,9 @@
         </encoder>
     </appender>
 
-    <!-- 文件日志格式(打印日志，不打印行号) -->
+    <!-- 文件日志格式(打印日志，不打印行号) %X{requestId}就是取MDC -->
     <property name="FILE_LOG_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] %-40.40logger{39} : %m%n"/>
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] %-40.40logger{39} --- requestId=%X{requestId}, sessionId=%X{sessionId} : %m%n"/>
 
     <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 正在记录的日志文件的路径及文件名 -->
@@ -50,13 +50,42 @@
         <appender-ref ref="FILE_ALL"/>
     </appender>
 
-    <!-- 日志输出级别 STDOUT:控制台；FILE_ALL:文件 -->
+    <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <discriminator>
+            <key>X-StandAlone-File</key>
+            <defaultValue>all</defaultValue>
+        </discriminator>
+        <sift>
+            <!-- Appender Name需要独立 -->
+            <appender name="FILE-${X-StandAlone-File}" class="ch.qos.logback.core.FileAppender">
+                <!-- 正在记录的日志文件的路径及文件名 -->
+                <!-- 输出位置，${X-StandAlone-File}取MDC -->
+                <file>${LOG_PATH}/${X-StandAlone-File}.log</file>
+                <!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                    <!-- 按日滚动 -->
+                    <fileNamePattern>${LOG_PATH}/%d{yyyy-MM}/log-%d{yyyy-MM-dd-HH}-%i.${X-StandAlone-File}.gz</fileNamePattern>
+                    <!-- 单个文件最大50M -->
+                    <maxFileSize>50MB</maxFileSize>
+                    <!--  最多占用5G磁盘空间，500个文件（总共不能超过该5G） -->
+                    <maxHistory>500</maxHistory>
+                    <totalSizeCap>5GB</totalSizeCap>
+                </rollingPolicy>
+                <!-- 追加方式记录日志 -->
+                <append>true</append>
+                <!-- 日志文件的格式 -->
+                <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                    <pattern>${FILE_LOG_PATTERN}</pattern>
+                    <charset>utf-8</charset>
+                </encoder>
+            </appender>
+        </sift>
+    </appender>
+
+    <!-- 日志输出级别 STDOUT:控制台；SIFT:文件 -->
     <root level="error">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
     </root>
-    <logger name="com.jiyuanwai.log.benchmark.LoggingBenchmark" level="info" additivity="false">
-        <!--        <appender-ref ref="ASYNC"/>-->
-        <appender-ref ref="FILE_ALL"/>
-    </logger>
 
 </configuration>

@@ -1,6 +1,46 @@
+# 测试 RequestHeader 使用
 GET http://localhost:8082/log/level
 Accept: */*
-#X-Debug: true
+# 通过Header，避免污染请求参数（否则文件上传会有问题）
+X-Debug: true
+Cache-Control: no-cache
+
+###
+
+
+# 以 Session 开启当前用户 DEBUG 模式
+PUT http://localhost:8082/log/level
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+
+standAlone=true
+
+###
+
+
+# 测试 Session 使用
+GET http://localhost:8082/log/level
+Accept: */*
+Cache-Control: no-cache
+
+###
+
+
+# 测试 调整全局 日志级别
+POST http://localhost:8082/log/level
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+
+loggerName=ROOT
+
+###
+
+
+# 测试还原日志级别为配置文件级别
+DELETE http://localhost:8082/log/level
+Accept: */*
 Cache-Control: no-cache
 
 ###

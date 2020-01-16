@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * LoggingExtendApplication
  *
- * @author xuning
+ * @author jiyanwai
  * @date 2020-01-15 16:15:06
  */
 @SpringBootApplication
